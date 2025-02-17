@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Stroop Task Experiment</title>
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.2.0"></script>
+    <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe@0.4"></script>
+    <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body></body>
+  <script>
+    const jsPsych = initJsPsych();
+
+const words = ["red", "blue", "green"];
+const colors = ["red", "blue", "green"];
+let stimuli = [];
+
+words.forEach(word => {
+  colors.forEach(color => {
+    stimuli.push({
+      word: word,
+      font_color: color,
+      congruent: (word === color)
+    });
+  });
+});
+
+stimuli = stimuli.concat(stimuli);
+stimuli = jsPsych.randomization.shuffle(stimuli);
+
+const ready_trial = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: '<p>Press any key when ready for the next trial</p>'
+};
+
+const stroop_trial = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: function(){
+    const current_stim = jsPsych.timelineVariable('current_stimulus');
+    return '<p style="color:' + current_stim.font_color + ';">' + current_stim.word.toUpperCase() + '</p>';
+  },
+  choices: ['MATCH', 'NOT'],
+  data: function(){
+    const current_stim = jsPsych.timelineVariable('current_stimulus');
+    return {
+      word: current_stim.word,
+      font_color: current_stim.font_color,
+      congruent: current_stim.congruent
+    };
+  }
+};
+
+const stroop_pair = {
+  timeline: [ready_trial, stroop_trial],
+  timeline_variables: stimuli.map(stim => ({ current_stimulus: stim })),
+  randomize_order: true
+};
+
+const save_data_trial = {
+  type: jsPsychPipe,
+  action: "save",
+  experiment_id: "tLXBiXY5rhcF", 
+  filename: "stroop_data.csv",
+  data_string: () => jsPsych.data.get().csv(),
+  on_finish: function(data){ alert(data.result.message); }
+};
+
+const timeline = [
+  stroop_pair,
+  save_data_trial
+];
+
+jsPsych.run(timeline);
+</script>
+</html>
+------------------------------------------------------
